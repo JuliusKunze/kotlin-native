@@ -16,25 +16,24 @@
 
 package org.jetbrains.kotlin.native.interop.gen.jvm
 
-import org.jetbrains.kotlin.native.interop.gen.wasm.processIdlLib
 import org.jetbrains.kotlin.konan.util.DefFile
-import org.jetbrains.kotlin.native.interop.tool.*
 import org.jetbrains.kotlin.native.interop.gen.HeadersInclusionPolicyImpl
 import org.jetbrains.kotlin.native.interop.gen.ImportsImpl
+import org.jetbrains.kotlin.native.interop.gen.argsToCompiler
+import org.jetbrains.kotlin.native.interop.gen.wasm.processIdlLib
 import org.jetbrains.kotlin.native.interop.indexer.*
+import org.jetbrains.kotlin.native.interop.tool.*
 import java.io.File
 import java.lang.IllegalArgumentException
 import java.nio.file.*
 import java.util.*
 
-fun main(args: Array<String>) = processCLib(args)
+fun main(args: Array<String>) {
+    processCLib(args)
+}
 
-fun interop(flavor: String, args: Array<String>, 
-    staticLibraries: MutableList<String>? = null,
-    libraryPaths: MutableList<String>? = null) =
-
-    when(flavor) {
-        "jvm", "native" -> processCLib(args, staticLibraries, libraryPaths)
+fun interop(flavor: String, args: Array<String>) = when(flavor) {
+        "jvm", "native" -> processCLib(args)
         "wasm" -> processIdlLib(args)
         else -> error("Unexpected flavor")
     }
@@ -232,9 +231,7 @@ private fun findFilesByGlobs(roots: List<Path>, globs: List<String>): Map<Path, 
 }
 
 
-private fun processCLib(args: Array<String>,
-    staticLibraries: MutableList<String>? = null,
-    libraryPaths: MutableList<String>? = null) {
+private fun processCLib(args: Array<String>): Array<String>? {
 
     val arguments = parseCommandLine(args, CInteropArguments())
     val userDir = System.getProperty("user.dir")
@@ -247,7 +244,7 @@ private fun processCLib(args: Array<String>,
     
     if (defFile == null && arguments.pkg == null) {
         usage()
-        return
+        return null
     }
 
     val tool = ToolConfig(
@@ -399,4 +396,6 @@ private fun processCLib(args: Array<String>,
     if (!arguments.keepcstubs) {
         outCFile.delete()
     }
+
+    return argsToCompiler(staticLibraries, libraryPaths)
 }

@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.cli.utilities
 
 import org.jetbrains.kotlin.cli.bc.main as konancMain
-import org.jetbrains.kotlin.native.interop.gen.jvm.interop
 import org.jetbrains.kotlin.cli.klib.main as klibMain
 
 fun main(args: Array<String>) {

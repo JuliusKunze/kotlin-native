@@ -28,6 +28,9 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 private val NODEFAULTLIBS = "-nodefaultlibs"
 private val PURGE_USER_LIBS = "--purge_user_libs"
 
+// TODO: this function should eventually be eliminated from 'utilities'. 
+// The interaction of interop and the compler should be streamlined. 
+
 fun invokeInterop(flavor: String, args: Array<String>): Array<String> {
     val cinteropArgFilter = listOf(NODEFAULTLIBS, PURGE_USER_LIBS)
 
@@ -89,12 +92,7 @@ fun invokeInterop(flavor: String, args: Array<String>): Array<String> {
 
     val cinteropArgs = (additionalArgs + args.filter { it !in cinteropArgFilter }).toTypedArray()
 
-    val staticLibraries = mutableListOf<String>()
-    val libraryPaths = mutableListOf<String>()
-
-    interop(flavor, cinteropArgs, staticLibraries, libraryPaths)
-
-    val cinteropArgsToCompiler = argsToCompiler(staticLibraries, libraryPaths)
+    val cinteropArgsToCompiler = interop(flavor, cinteropArgs) ?: emptyArray<String>()
 
     val nativeStubs = 
         if (flavor == "wasm") 
@@ -118,25 +116,4 @@ fun invokeInterop(flavor: String, args: Array<String>): Array<String> {
     return konancArgs
 }
 
-
-private fun resolveLibraries(staticLibraries: List<String>, libraryPaths: List<String>): List<String> {
-    val result = mutableListOf<String>()
-    staticLibraries.forEach { library ->
-        
-        val resolution = libraryPaths.map { "$it/$library" } 
-                .find { File(it).exists }
-
-        if (resolution != null) {
-            result.add(resolution)
-        } else {
-            error("Could not find '$library' binary in neither of $libraryPaths")
-        }
-    }
-    return result
-}
-
-private fun argsToCompiler(staticLibraries: List<String>, libraryPaths: List<String>): List<String> {
-    return resolveLibraries(staticLibraries, libraryPaths)
-        .map { it -> listOf("-includeBinary", it) } .flatten()
-}
 

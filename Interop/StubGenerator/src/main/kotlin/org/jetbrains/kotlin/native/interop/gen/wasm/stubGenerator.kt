@@ -1,6 +1,7 @@
 package org.jetbrains.kotlin.native.interop.gen.wasm
 
 import org.jetbrains.kotlin.konan.file.File
+import org.jetbrains.kotlin.native.interop.gen.argsToCompiler
 import org.jetbrains.kotlin.native.interop.gen.wasm.idl.*
 import org.jetbrains.kotlin.native.interop.tool.CommonInteropArguments
 import org.jetbrains.kotlin.native.interop.tool.parseCommandLine
@@ -389,7 +390,7 @@ fun generateJs(interfaces: List<Interface>): String =
 const val idlMathPackage = "kotlinx.interop.wasm.math"
 const val idlDomPackage = "kotlinx.interop.wasm.dom"
 
-fun processIdlLib(args: Array<String>) {
+fun processIdlLib(args: Array<String>): Array<String> {
     val arguments = parseCommandLine(args, CommonInteropArguments())
     // TODO: Refactor me.
     val userDir = System.getProperty("user.dir")
@@ -405,5 +406,6 @@ fun processIdlLib(args: Array<String>) {
     File(ktGenRoot, "kotlin_stubs.kt").writeText(generateKotlin(arguments.pkg!!, idl))
     File(nativeLibsDir, "js_stubs.js").writeText(generateJs(idl))
     File(arguments.manifest!!).writeText("") // The manifest is currently unused for wasm.
+    return argsToCompiler(arguments.staticLibrary, arguments.libraryPath)
 }
 

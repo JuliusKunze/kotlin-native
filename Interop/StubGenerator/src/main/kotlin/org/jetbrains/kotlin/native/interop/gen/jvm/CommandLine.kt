@@ -33,6 +33,12 @@ open class CommonInteropArguments : CommonToolArguments() {
 
     @Argument(value = "-manifest", valueDescription = "<file>", description = "library manifest addend") 
     var manifest: String? = null
+
+    @Argument(value = "-staticLibrary", valueDescription = "<file>", description = "embed static library to the result") 
+    var staticLibrary: Array<String> = arrayOf()
+
+    @Argument(value = "-libraryPath", valueDescription = "<dir>", description = "add a library search path") 
+    var libraryPath: Array<String> = arrayOf()
 }
 
 class CInteropArguments : CommonInteropArguments() {
@@ -66,14 +72,8 @@ class CInteropArguments : CommonInteropArguments() {
     var shims: Boolean = false
 
     @Argument(value = "-linker", valueDescription = "<file>", description = "use specified linker") 
+
     var linker: String? = null
-
-    @Argument(value = "-staticLibrary", valueDescription = "<file>", description = "embed static library to the result") 
-    var staticLibrary: Array<String> = arrayOf()
-
-    @Argument(value = "-libraryPath", valueDescription = "<dir>", description = "add a library search path") 
-    var libraryPath: Array<String> = arrayOf()
-
     @Argument(value = "-cstubsname", valueDescription = "<name>", description = "provide a name for the generated c stubs file") 
     var cstubsname: String? = null
 
