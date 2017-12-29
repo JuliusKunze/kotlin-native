@@ -39,7 +39,7 @@ fun Type.wasmReturnArg(): String =
         is idlVoid -> "ArenaManager.currentArena" // TODO: optimize.
         is idlInt -> "ArenaManager.currentArena"
         is idlFloat -> "ArenaManager.currentArena"
-        is idlDouble -> "resultPtr"
+        is idlDouble -> "ArenaManager.currentArena"
         is idlString -> "ArenaManager.currentArena"
         is idlObject -> "ArenaManager.currentArena"
         is idlFunction -> "ArenaManager.currentArena"
@@ -96,30 +96,14 @@ fun Member.wasmReceiverArgs(parent: Interface) =
     if (isStatic) emptyList()
     else parent.wasmReceiverArgs
 
-val Type.allocateReturnDestination get() =
-    when (this) {
-        is idlDouble -> "    val resultPtr = allocateDouble()\n"
-        else -> ""
-    }
-val Operation.allocateReturnDestination get() = returnType.allocateReturnDestination
-val Attribute.allocateReturnDestination get() = type.allocateReturnDestination
-
-val Type.deallocateReturnDestination get() =
-    when (this) {
-        is idlDouble -> "    deallocateDouble(doublePtr)\n"
-        else -> ""
-    }
-val Operation.deallocateReturnDestination get() = returnType.deallocateReturnDestination
-val Attribute.deallocateReturnDestination get() = type.deallocateReturnDestination
-
 fun Type.generateKotlinCall(name: String, wasmArgList: String) =
     "$name($wasmArgList)" 
 
 fun Type.generateKotlinCallWithReturn(name: String, wasmArgList: String) =
     when(this) {
         is idlVoid ->   "    ${generateKotlinCall(name, wasmArgList)}\n"
-        is idlDouble -> "    val doublePtr = ${generateKotlinCall(name, wasmArgList)}\n" +
-                        "    val wasmRetVal = heapDouble(doublePtr)\n"
+        is idlDouble -> "    ${generateKotlinCall(name, wasmArgList)}\n" +
+                        "    val wasmRetVal = ReturnSlot_getDouble()\n"
 
         else ->         "    val wasmRetVal = ${generateKotlinCall(name, wasmArgList)}\n"
     }
@@ -145,9 +129,7 @@ fun Operation.generateKotlin(parent: Interface): String {
     return "  fun $kotlinTypeParameters $name(" + 
     argList + 
     "): ${returnType.toKotlinType()} {\n" +
-        allocateReturnDestination +
         generateKotlinCallWithReturn(parent.name, wasmArgList) +
-        deallocateReturnDestination +
     "    return ${returnType.wasmReturnMapping("wasmRetVal")}\n"+
     "  }\n\n"
 }
@@ -164,10 +146,7 @@ fun Attribute.generateKotlinSetter(parent: Interface): String {
 fun Attribute.generateKotlinGetter(parent: Interface): String {
     val wasmArgList = (wasmReceiverArgs(parent) + wasmReturnArg).joinToString(", ")
     return "    get() {\n" +
-        allocateReturnDestination +
         generateKotlinGetterCallWithReturn(parent.name, wasmArgList) +
-        deallocateReturnDestination +
-    //"      val wasmRetVal = ${wasmGetterName(name, parent.name)}(${(wasmReceiverArgs(parent) + wasmReturnArg).joinToString(", ")})\n" + 
     "      return ${type.wasmReturnMapping("wasmRetVal")}\n"+
     "    }\n\n"
 }
@@ -209,14 +188,14 @@ fun Attribute.generateWasmStubs(parent: Interface) =
     generateWasmGetterStub(parent) +
     if (!readOnly) generateWasmSetterStub(parent) else ""
 
-// TODO: consider using virtual mathods
+// TODO: consider using virtual methods
 fun Member.generateKotlin(parent: Interface): String = when (this) {
     is Operation -> this.generateKotlin(parent)
     is Attribute -> this.generateKotlin(parent)
     else -> error("Unexpected member")
 }
 
-// TODO: consider using virtual mathods
+// TODO: consider using virtual methods
 fun Member.generateWasmStub(parent: Interface) =
     when (this) {
         is Operation -> this.generateWasmStub(parent)
@@ -228,12 +207,8 @@ fun Member.generateWasmStub(parent: Interface) =
 fun Arg.wasmTypedMapping()
     = this.wasmArgNames().map { "$it: Int" } .joinToString(", ")
 
-fun Type.wasmTypedReturnMapping(): String =
-    when (this) {
-        idlDouble -> "resultPtr: Int"
-        else -> "resultArena: Int"
-            // TODO: all types.
-    }
+// TODO: Optimize for simple types.
+fun Type.wasmTypedReturnMapping(): String = "resultArena: Int"
 
 val Operation.wasmTypedReturnMapping get() = returnType.wasmTypedReturnMapping()
 
@@ -341,7 +316,7 @@ val Type.wasmReturnArgName get() =
         is idlVoid -> emptyList()
         is idlInt -> emptyList()
         is idlFloat -> emptyList()
-        is idlDouble -> listOf("resultPtr")
+        is idlDouble -> emptyList()
         is idlString -> listOf("resultArena")
         is idlObject -> listOf("resultArena")
         is idlInterfaceRef -> listOf("resultArena")
@@ -353,7 +328,7 @@ val Type.wasmReturnExpression get() =
         is idlVoid -> ""
         is idlInt -> "result"
         is idlFloat -> "result" // TODO: can we really pass floats as is?
-        is idlDouble -> "doubleToHeap(result, resultPtr)"
+        is idlDouble -> "doubleToReturnSlot(result)"
         is idlString -> "toArena(resultArena, result)"
         is idlObject -> "toArena(resultArena, result)"
         is idlInterfaceRef -> "toArena(resultArena, result)"

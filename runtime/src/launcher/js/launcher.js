@@ -120,11 +120,9 @@ function int32ToHeap(value, pointer) {
     heap[pointer+3] = (value & 0xff000000) >>> 24;
 }
 
-function doubleToHeap(value, pointer) {
+function doubleToReturnSlot(value) {
     var twoInts = doubleToTwoInts(value);
-    int32ToHeap(twoInts.lower, pointer);
-    int32ToHeap(twoInts.upper, pointer + 4);
-    return pointer;
+    instance.exports.ReturnSlot_setDouble(twoInts.upper, twoInts.lower);
 }
 
 function stackTop() {

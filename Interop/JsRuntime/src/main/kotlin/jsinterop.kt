@@ -24,17 +24,8 @@ fun doubleUpper(value: Double): Int =
 fun doubleLower(value: Double): Int =
     (value.toBits() and 0x00000000ffffffff) .toInt()
 
-fun heapDouble(pointer: Int): Double {
-    return pointer.toLong().toCPointer<DoubleVar>()!!.pointed.value
-}
-
-fun allocateDouble(): Int {
-    // TODO: LP64 unsafe, but wasm is 32 bit
-    return nativeHeap.alloc<DoubleVar>().ptr.toLong().toInt() 
-}
-
-fun deallocateDouble(ptr: Int) = 
-    nativeHeap.free(ptr.toLong().toCPointer<DoubleVar>()!!.pointed)
+@SymbolName("ReturnSlot_getDouble")
+external public fun ReturnSlot_getDouble(): Double
 
 @SymbolName("Kotlin_String_utf16pointer")
 external public fun stringPointer(message: String): Pointer
